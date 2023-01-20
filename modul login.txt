@@ -1,0 +1,115 @@
+//alur login
+1. create controller & view
+2. create function process
+
+3. ambil semua inputan dari user
+ $username = $this->input->post('username');
+ $password = $this->input->post('password');
+ 
+4.cek username dari db models apakah ada / tidak
+  $checkusername = $this->Authmodel->checkusername($username);
+  
+5. query di model 
+   public function checkusername($username)
+      {
+         $query =  $this->db->query("SELECT username FROM tk_user WHERE username = '$username' LIMIT 1");
+         return  $query;
+      }
+   
+6. cek jika ada username maka lolos validasi awal jika tidak ada username kembalikan ke view dengan alert (username tidak terdaftar)
+        if ($checkusername->num_rows() > 0) {
+            echo 'username terdaftar';
+        }else {
+            echo 'username tidak terdaftar';
+        }
+
+7. cek username dan pass dari db models apakah sesuai atau  tidak
+	
+    $passwordandusername = $this->Authmodel->passwordandusername($username, $password);
+	
+8.	jika username dan pw sesuai
+
+      if ($passwordandusername->num_rows() > 0) {
+               
+               $getallfield = $passwordandusername->row_array();
+
+                //check 
+               //var_dump($getallfield); die();
+			   
+9.jika username dan tidak pw sesuai
+            }else {
+                echo 'pass tidak sesuai dengan username';
+            }
+			
+10.jika  username dan pw sesuai dan Lolos validasi maka cek status akun aktif atau tidak
+   
+    if ($getallfield['user_status'] == 1) {
+
+                    echo 'Akun AKTIF';
+                    
+                }else {
+                   echo 'Akun Tidak AKTIF';
+                }
+				
+11. jika akun aktif 
+	 if ($getallfield['user_status'] == 1) {
+
+                //buat session untuk mencegah masuk lewat url
+                $this->session->set_userdata('locked', TRUE);
+                //deklarasi
+                $this->session->set_userdata('user', $username);
+                //deklarasi id
+                $id = $getallfield['user_id'];
+				
+				12.jika akun aktif redirect ke dashboard sesuai user akses pagenya
+				
+				 if ($getallfield['user_akses'] == 1) {
+                    $name =  $getallfield['name'];
+                    $usernames =  $getallfield['username'];
+                    $this->session->set_userdata('access', 'Admin');
+                    $this->session->set_userdata('id', $id);
+                    $this->session->set_userdata('nama', $name);
+                    $this->session->set_userdata('username', $usernames);
+                     redirect('Dashboard');
+                    }
+					13. jika akun aktif redirect ke user sesuai user akses pagenya
+					elseif($getallfield['user_akses'] == 2){
+                                                    $name =  $getallfield['nama_user'];
+                                                    $usernames =  $getallfield['username'];
+                                                    $this->session->set_userdata('access', 'user');
+                                                    $this->session->set_userdata('id', $id);
+                                                    $this->session->set_userdata('nama_user', $name);
+                                                    $this->session->set_userdata('username', $usernames);
+                                                    redirect('User');
+
+                                           }
+					14.jika akun tidak aktif 
+					else {
+                    echo 'tidak punya akses ke page manapun';
+                }
+                }else {
+                   echo 'Akun Tidak AKTIF';
+                }	
+
+15. logout
+function logout()
+    {
+        $this->session->sess_destroy();
+        redirect('Auth/Login');
+    }				
+	
+	
+16. code untuk menghindari akses lewat url(di temapatkan di dalam construct)
+    
+	if($this->session->userdata('locked') !=TRUE){
+         redirect('Auth/Login');
+		};
+		
+		
+17 code untuk menampilkan di view template
+   jika session nya mengakses admin maka tampilkan menu yang ada di scope kodenya
+   
+		 <?php if ($this->session->userdata('access') == 'ADMIN IT') { ?>
+		 
+		 
+		 <?php }?>
